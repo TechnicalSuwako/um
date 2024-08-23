@@ -45,12 +45,18 @@ CFLAGS += -I/usr/local/include -L/usr/local/lib
 .endif
 
 LDFLAGS = -lc -lX11 -lXft
+SLIB = -lxcb -lfontconfig -lz -lexpat -lfreetype -lXrender -lXau -lXdmcp
 
 all:
-	${CC} ${CFLAGS} -o ${NAME} ${FILES} ${LDFLAGS}
+	${CC} ${CFLAGS} -o ${NAME} ${FILES} -static ${LDFLAGS} ${SLIB}
 	strip ${NAME}
+
+debug:
+	${CC} -Wall -Wextra -g -I/usr/include -L/usr/lib \
+		-I/usr/X11R6/include -I/usr/X11R6/include/freetype2 -L/usr/X11R6/lib \
+		-o ${NAME} ${FILES} ${LDFLAGS}
 
 clean:
 	rm -rf ${NAME}
 
-.PHONY: all clean
+.PHONY: all debug clean
