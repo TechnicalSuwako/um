@@ -107,12 +107,16 @@ void fetch_programs() {
       scan_desktop_files(path);
     }
   } else {
-    scan_desktop_files(xdg_data_home);
+    char path[MAX_NAME_LEN];
+    snprintf(path, sizeof(path), "%s/applications", xdg_data_home);
+    scan_desktop_files(path);
   }
 
   scan_desktop_files("/usr/share/applications");
   scan_desktop_files("/usr/local/share/applications");
+#if defined(__NetBSD__)
   scan_desktop_files("/usr/pkg/share/applications");
+#endif
 }
 
 void drawtext(
