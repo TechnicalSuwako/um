@@ -74,6 +74,42 @@ void add_to_dup(const char *name) {
   }
 }
 
+void parse_name(char *line, Program *program) {
+  if (strncmp(line, "Name[", 5) == 0) {
+    char *locale = line + 5;
+    char *end = strchr(locale, ']');
+    if (!end) return;
+    *end = '\0';
+    if (strncmp(locale, getenv("LANG"), 2) != 0) return;
+    if (!isdup(end + 2)) {
+      strncpy(program->name, end + 2, MAX_NAME_LEN - 1);
+      program->name[strcspn(program->name, "\n")] = '\0';
+    }
+    add_to_dup(end + 2);
+  } else {
+    if (!isdup(line + 5)) {
+      strncpy(program->name, line + 5, MAX_NAME_LEN - 1);
+      program->name[strcspn(program->name, "\n")] = '\0';
+    }
+    add_to_dup(line + 5);
+  }
+}
+
+void parse_keywords(char *line, Program *program) {
+  strncpy(program->keys, line + 9, MAX_NAME_LEN - 1);
+  program->keys[strcspn(program->keys, "\n")] = '\0';
+}
+
+void parse_exec(char *line, Program *program) {
+  strncpy(program->exec, line + 5, MAX_NAME_LEN - 1);
+  program->exec[strcspn(program->exec, "\n")] = '\0';
+  char *p = program->exec;
+  while ((p = strpbrk(p, "%")) != NULL) {
+    *p = '\0';
+    strncat(program->exec, p + 2, strlen(p + 2));
+  }
+}
+
 void parse_desktop_file(const char *filepath) {
   FILE *file = fopen(filepath, "r");
   if (!file) return;
@@ -82,41 +118,12 @@ void parse_desktop_file(const char *filepath) {
   Program program = {0};
 
   while (fgets(line, sizeof(line), file)) {
-    if (
-      strncmp(line, "Name=", 5) == 0 ||
-      strncmp(line, "Name[", 5) == 0
-    ) {
-      if (strncmp(line, "Name[", 5) == 0) {
-        char *locale = line + 5;
-        char *end = strchr(locale, ']');
-        if (end) {
-          *end = '\0';
-          if (strncmp(locale, getenv("LANG"), 2) == 0) {
-            if (!isdup(end + 2)) {
-              strncpy(program.name, end + 2, MAX_NAME_LEN - 1);
-              program.name[strcspn(program.name, "\n")] = '\0';
-            }
-            add_to_dup(end + 2);
-          }
-        }
-      } else {
-        if (!isdup(line + 5)) {
-          strncpy(program.name, line + 5, MAX_NAME_LEN - 1);
-          program.name[strcspn(program.name, "\n")] = '\0';
-        }
-        add_to_dup(line + 5);
-      }
+    if (strncmp(line, "Name=", 5) == 0 || strncmp(line, "Name[", 5) == 0) {
+      parse_name(line, &program);
     } else if (strncmp(line, "Keywords=", 9) == 0) {
-      strncpy(program.keys, line + 9, MAX_NAME_LEN - 1);
-      program.keys[strcspn(program.keys, "\n")] = '\0';
+      parse_keywords(line, &program);
     } else if (strncmp(line, "Exec=", 5) == 0) {
-      strncpy(program.exec, line + 5, MAX_NAME_LEN - 1);
-      program.exec[strcspn(program.exec, "\n")] = '\0';
-      char *p = program.exec;
-      while ((p = strpbrk(p, "%")) != NULL) {
-        *p = '\0';
-        strncat(program.exec, p + 2, strlen(p + 2));
-      }
+      parse_exec(line, &program);
     }
   }
 
@@ -217,13 +224,14 @@ void filterdisplay(
   int idx = 0;
 
   for (int i = 0; i < programcount; i++) {
-    if (strcasestr(programs[i].name, input) || strcasestr(programs[i].keys, input)) {
-      if (idx >= topidx && idx < topidx + display_items) {
-        drawtext(display, window, gc, 10, y, programs[i].name, idx == sel);
-        y += item_height;
-      }
-      idx++;
+    if (!strcasestr(programs[i].name, input) && !strcasestr(programs[i].keys, input))
+      continue;
+
+    if (idx >= topidx && idx < topidx + display_items) {
+      drawtext(display, window, gc, 10, y, programs[i].name, idx == sel);
+      y += item_height;
     }
+    idx++;
   }
 }
 
@@ -351,9 +359,8 @@ int main() {
     XNextEvent(display, &event);
 
     if (event.type == Expose || event.type == ConfigureNotify) {
-      if (event.type == ConfigureNotify) {
+      if (event.type == ConfigureNotify)
         calculate_dimensions(event.xconfigure.width, event.xconfigure.height);
-      }
       filterdisplay(display, window, gc, input, sel);
     } else if (event.type == KeyPress) {
       char buf[32];
@@ -373,14 +380,14 @@ int main() {
         }
       } else if (keysym == XK_Page_Up) {
         if (sel > 0) {
-          sel -= 10;
-          if (sel < topidx) topidx -= 10;
+          sel -= display_items;
+          if (sel < topidx) topidx -= display_items;
         }
       } else if (keysym == XK_Page_Down) {
         int filteredcount = filtercount(input);
         if (sel < filteredcount - 1) {
-          sel += 10;
-          if (sel >= topidx + display_items) topidx += 10;
+          sel += display_items;
+          if (sel >= topidx + display_items) topidx += display_items;
         }
       } else if (keysym == XK_BackSpace && strlen(input) > 0) {
         input[strlen(input) - 1] = '\0';
@@ -389,13 +396,12 @@ int main() {
       } else if (keysym == XK_Return) {
         int visible_index = 0;
         for (int i = 0; i < programcount; i++) {
-          if (strcasestr(programs[i].name, input)) {
-            if (visible_index == sel) {
-              launch_program(programs[i].exec);
-              break;
-            }
-            visible_index++;
+          if (!strcasestr(programs[i].name, input)) continue;
+          if (visible_index == sel) {
+            launch_program(programs[i].exec);
+            break;
           }
+          visible_index++;
         }
         break;
       } else if (keysym == XK_Escape) {
@@ -412,8 +418,12 @@ int main() {
       int y = event.xbutton.y;
 
       for (int i = 0; i < programcount; i++) {
-        if (x >= programs[i].x && x <= programs[i].x + programs[i].width &&
-            y >= programs[i].y - item_height && y <= programs[i].y) {
+        if (
+          x >= programs[i].x &&
+          x <= programs[i].x + programs[i].width &&
+          y >= programs[i].y - item_height &&
+          y <= programs[i].y
+        ) {
           launch_program(programs[i].exec);
           break;
         }
