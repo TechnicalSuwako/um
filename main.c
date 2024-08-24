@@ -175,7 +175,7 @@ void drawtext(
   int sel
 ) {
   if (sel) {
-    XSetForeground(display, gc, WhitePixel(display, DefaultScreen(display)));
+    XSetForeground(display, gc, BlackPixel(display, DefaultScreen(display)));
     XFillRectangle(
       display,
       window,
@@ -370,6 +370,17 @@ int main() {
         if (sel < filteredcount - 1) {
           sel++;
           if (sel >= topidx + display_items) topidx++;
+        }
+      } else if (keysym == XK_Page_Up) {
+        if (sel > 0) {
+          sel -= 10;
+          if (sel < topidx) topidx -= 10;
+        }
+      } else if (keysym == XK_Page_Down) {
+        int filteredcount = filtercount(input);
+        if (sel < filteredcount - 1) {
+          sel += 10;
+          if (sel >= topidx + display_items) topidx += 10;
         }
       } else if (keysym == XK_BackSpace && strlen(input) > 0) {
         input[strlen(input) - 1] = '\0';
