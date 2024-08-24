@@ -19,17 +19,14 @@ OS = linux
 ARCH = amd64
 .endif
 
-NAME = um
-VERSION = 0.0.0
+NAME != cat main.c | grep "const char \*sofname" | awk '{print $$5}' |\
+	sed "s/\"//g" | sed "s/;//"
+VERSION != cat main.c | grep "const char \*version" | awk '{print $$5}' |\
+	sed "s/\"//g" | sed "s/;//"
 
 PREFIX = /usr/local
 .if ${OS} == "linux"
 PREFIX = /usr
-.endif
-
-MANPREFIX = ${PREFIX}/share/man
-.if ${OS} == "openbsd"
-MANPREFIX = ${PREFIX}/man
 .endif
 
 CC = cc
@@ -59,4 +56,25 @@ debug:
 clean:
 	rm -rf ${NAME}
 
-.PHONY: all debug clean
+dist:
+	mkdir -p ${NAME}-${VERSION} release/src
+	cp -R LICENSE.txt Makefile README.md CHANGELOG.md\
+		main.c src ${NAME}-${VERSION}
+	tar zcfv release/src/${NAME}-${VERSION}.tar.gz ${NAME}-${VERSION}
+	rm -rf ${NAME}-${VERSION}
+
+release:
+	mkdir -p release/bin/${VERSION}/${OS}/${ARCH}
+	${CC} ${CFLAGS} -o release/bin/${VERSION}/${OS}/${ARCH}/${NAME} ${FILES}\
+		-static ${LDFLAGS}
+	strip release/bin/${VERSION}/${OS}/${ARCH}/${NAME}
+
+install:
+	mkdir -p ${DESTDIR}${PREFIX}/bin
+	cp -f ${NAME} ${DESTDIR}${PREFIX}/bin
+	chmod 755 ${DESTDIR}${PREFIX}/bin/${NAME}
+
+uninstall:
+	rm -f ${DESTDIR}${PREFIX}/bin/${NAME}
+
+.PHONY: all debug clean dist release install uninstall

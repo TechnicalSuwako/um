@@ -17,6 +17,9 @@ typedef struct {
   int x, y, width, height;
 } Program;
 
+const char *sofname = "um";
+const char *version = "0.1.0";
+
 Program programs[MAX_ITEMS];
 int programcount = 0;
 int topidx = 0;
@@ -110,22 +113,6 @@ void fetch_programs() {
   scan_desktop_files("/usr/share/applications");
   scan_desktop_files("/usr/local/share/applications");
   scan_desktop_files("/usr/pkg/share/applications");
-}
-
-void draw_items(XftDraw *draw, XftFont *font, XftColor color_default, XftColor color_selected, int selected_index) {
-  int y = 0;
-  int index = 0;
-  char *items[] = { /* your items here */ };
-  int num_items = sizeof(items) / sizeof(items[0]);
-
-  for (int i = 0; i < num_items; i++) {
-    XftColor *color = (index == selected_index) ? &color_selected : &color_default;
-
-    XftDrawStringUtf8(draw, color, font, 10, y + font->ascent, (XftChar8 *)items[i], strlen(items[i]));
-
-    y += font->ascent + font->descent;
-    index++;
-  }
 }
 
 void drawtext(
@@ -229,7 +216,7 @@ int main() {
 
   display = XOpenDisplay(NULL);
   if (display == NULL) {
-    fprintf(stderr, "Cannot open display\n");
+    fprintf(stderr, "画面を開けられません。\n");
     exit(1);
   }
 
@@ -261,7 +248,7 @@ int main() {
 
   gc = XCreateGC(display, window, 0, &values);
   if (!gc) {
-    fprintf(stderr, "Unable to create GC\n");
+    fprintf(stderr, "GCを作れません。\n");
     exit(1);
   }
 
@@ -270,7 +257,7 @@ int main() {
   colormap = XCreateColormap(display, window, visual, AllocNone);
   if (colormap == None) {
     XFreeGC(display, gc);
-    fprintf(stderr, "Unable to create colormap\n");
+    fprintf(stderr, "カラーマップを作れません。\n");
     exit(1);
   }
 
@@ -278,7 +265,7 @@ int main() {
   if (!draw) {
     XFreeGC(display, gc);
     XFreeColormap(display, colormap);
-    fprintf(stderr, "Unable to create draw\n");
+    fprintf(stderr, "ドローを作れません。\n");
     exit(1);
   }
 
@@ -287,7 +274,7 @@ int main() {
     XFreeGC(display, gc);
     XFreeColormap(display, colormap);
     XftDrawDestroy(draw);
-    fprintf(stderr, "Unable to load font\n");
+    fprintf(stderr, "フォントの読み込みに失敗。\n");
     exit(1);
   }
 
@@ -296,7 +283,7 @@ int main() {
     XFreeColormap(display, colormap);
     XftDrawDestroy(draw);
     XftFontClose(display, font);
-    fprintf(stderr, "Unable to allocate color\n");
+    fprintf(stderr, "色の役割に失敗。\n");
   }
 
   if (!XftColorAllocName(display, visual, colormap, "black", &selcolor)) {
@@ -305,7 +292,7 @@ int main() {
     XftDrawDestroy(draw);
     XftFontClose(display, font);
     XftColorFree(display, visual, colormap, &color);
-    fprintf(stderr, "Unable to allocate selected color\n");
+    fprintf(stderr, "選択色の役割に失敗。\n");
   }
 
   XMapWindow(display, window);
