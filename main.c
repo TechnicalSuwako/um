@@ -9,6 +9,7 @@
 
 #define MAX_ITEMS 512
 #define MAX_NAME_LEN 256
+#define MAX_LINE_LENGTH 256
 
 typedef struct {
   char name[MAX_NAME_LEN];
@@ -16,6 +17,13 @@ typedef struct {
   char exec[MAX_NAME_LEN];
   int x, y, width, height;
 } Program;
+
+typedef struct {
+  char name[MAX_NAME_LEN];
+} Dup;
+
+Dup dupn[MAX_NAME_LEN * 2];
+int dupcnt = 0;
 
 const char *sofname = "um";
 const char *version = "0.1.0";
@@ -34,11 +42,43 @@ Colormap colormap;
 XftDraw *draw;
 XftFont *font;
 
+int isdup(const char *name) {
+  for (int i = 0; i < dupcnt; i++) {
+    if (strncmp(dupn[i].name, name, strlen(name)) == 0) return 1;
+  }
+
+  return 0;
+}
+
+int isdis(const char *filepath) {
+  FILE *file = fopen(filepath, "r");
+  if (!file) return 0;
+
+  char line[MAX_LINE_LENGTH];
+  while (fgets(line, sizeof(line), file)) {
+    if (strstr(line, "NoDisplay=true")) {
+      fclose(file);
+      return 0;
+    }
+  }
+
+  fclose(file);
+  return 1;
+}
+
+void add_to_dup(const char *name) {
+  if (dupcnt < (MAX_NAME_LEN * 2)) {
+    strncpy(dupn[dupcnt].name, name, MAX_NAME_LEN - 1);
+    dupn[dupcnt].name[MAX_NAME_LEN - 1] = '\0';
+    dupcnt++;
+  }
+}
+
 void parse_desktop_file(const char *filepath) {
   FILE *file = fopen(filepath, "r");
   if (!file) return;
 
-  char line[512];
+  char line[MAX_NAME_LEN * 2];
   Program program = {0};
 
   while (fgets(line, sizeof(line), file)) {
@@ -52,13 +92,19 @@ void parse_desktop_file(const char *filepath) {
         if (end) {
           *end = '\0';
           if (strncmp(locale, getenv("LANG"), 2) == 0) {
-            strncpy(program.name, end + 2, MAX_NAME_LEN - 1);
-            program.name[strcspn(program.name, "\n")] = '\0';
+            if (!isdup(end + 2)) {
+              strncpy(program.name, end + 2, MAX_NAME_LEN - 1);
+              program.name[strcspn(program.name, "\n")] = '\0';
+            }
+            add_to_dup(end + 2);
           }
         }
       } else {
-        strncpy(program.name, line + 5, MAX_NAME_LEN - 1);
-        program.name[strcspn(program.name, "\n")] = '\0';
+        if (!isdup(line + 5)) {
+          strncpy(program.name, line + 5, MAX_NAME_LEN - 1);
+          program.name[strcspn(program.name, "\n")] = '\0';
+        }
+        add_to_dup(line + 5);
       }
     } else if (strncmp(line, "Keywords=", 9) == 0) {
       strncpy(program.keys, line + 9, MAX_NAME_LEN - 1);
@@ -88,9 +134,9 @@ void scan_desktop_files(const char *directory) {
   struct dirent *entry;
   while ((entry = readdir(dir)) != NULL) {
     if (strcasestr(entry->d_name, ".desktop")) {
-      char filepath[512];
+      char filepath[MAX_NAME_LEN * 2];
       snprintf(filepath, sizeof(filepath), "%s/%s", directory, entry->d_name);
-      parse_desktop_file(filepath);
+      if (isdis(filepath)) parse_desktop_file(filepath);
     }
   }
 
