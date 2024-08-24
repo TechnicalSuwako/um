@@ -11,6 +11,10 @@
 #define MAX_NAME_LEN 256
 #define MAX_LINE_LENGTH 256
 
+#define WHITE 0xfcfcfc
+#define BLACK 0x120f12
+#define BGCOL 0x550f75
+
 typedef struct {
   char name[MAX_NAME_LEN];
   char keys[MAX_NAME_LEN];
@@ -182,7 +186,7 @@ void drawtext(
   int sel
 ) {
   if (sel) {
-    XSetForeground(display, gc, BlackPixel(display, DefaultScreen(display)));
+    XSetForeground(display, gc, BLACK);
     XFillRectangle(
       display,
       window,
@@ -192,9 +196,9 @@ void drawtext(
       window_width,
       item_height
     );
-    XSetForeground(display, gc, BlackPixel(display, DefaultScreen(display)));
+    XSetForeground(display, gc, BLACK);
   } else {
-    XSetForeground(display, gc, WhitePixel(display, DefaultScreen(display)));
+    XSetForeground(display, gc, WHITE);
   }
 
   XftDrawStringUtf8(
@@ -292,11 +296,11 @@ int main() {
     RootWindow(display, screen),
     window_x, window_y, window_width, window_height,
     1,
-    BlackPixel(display, screen),
-    BlackPixel(display, screen)
+    BLACK,
+    BLACK
   );
 
-  XSetWindowBackground(display, window, 0x551A8B); // RGB (85, 26, 139)
+  XSetWindowBackground(display, window, BGCOL);
 
   XSelectInput(
     display,
