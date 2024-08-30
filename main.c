@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <stdbool.h>
 
 #define MAX_ITEMS 512
 #define MAX_NAME_LEN 256
@@ -40,6 +41,11 @@ int window_width = 300;
 int window_height = 240;
 int item_height = 20;
 int display_items = 10;
+
+bool isDesktopEntry = false;
+bool foundName = false;
+bool foundKey = false;
+bool foundExec = false;
 
 XftColor color, selcolor;
 Colormap colormap;
@@ -79,6 +85,7 @@ void add_to_dup(const char *name) {
 }
 
 void parse_name(char *line, Program *program) {
+  if (foundName) return;
   if (strncmp(line, "Name[", 5) == 0) {
     char *locale = line + 5;
     char *end = strchr(locale, ']');
@@ -90,21 +97,26 @@ void parse_name(char *line, Program *program) {
       program->name[strcspn(program->name, "\n")] = '\0';
     }
     add_to_dup(end + 2);
+    foundName = true;
   } else {
     if (!isdup(line + 5)) {
       strncpy(program->name, line + 5, MAX_NAME_LEN - 1);
       program->name[strcspn(program->name, "\n")] = '\0';
     }
     add_to_dup(line + 5);
+    foundName = true;
   }
 }
 
 void parse_keywords(char *line, Program *program) {
+  if (foundKey) return;
   strncpy(program->keys, line + 9, MAX_NAME_LEN - 1);
   program->keys[strcspn(program->keys, "\n")] = '\0';
+  foundKey = true;
 }
 
 void parse_exec(char *line, Program *program) {
+  if (foundExec) return;
   strncpy(program->exec, line + 5, MAX_NAME_LEN - 1);
   program->exec[strcspn(program->exec, "\n")] = '\0';
   char *p = program->exec;
@@ -112,6 +124,7 @@ void parse_exec(char *line, Program *program) {
     *p = '\0';
     strncat(program->exec, p + 2, strlen(p + 2));
   }
+  foundExec = true;
 }
 
 void parse_desktop_file(const char *filepath) {
@@ -148,6 +161,10 @@ void scan_desktop_files(const char *directory) {
       char filepath[MAX_NAME_LEN * 2];
       snprintf(filepath, sizeof(filepath), "%s/%s", directory, entry->d_name);
       if (isdis(filepath)) parse_desktop_file(filepath);
+      isDesktopEntry = false;
+      foundName = false;
+      foundKey = false;
+      foundExec = false;
     }
   }
 
