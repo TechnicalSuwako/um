@@ -110,19 +110,28 @@ void parse_name(char *line, Program *program) {
 
 void parse_keywords(char *line, Program *program) {
   if (foundKey) return;
-  strncpy(program->keys, line + 9, MAX_NAME_LEN - 1);
+  size_t len = strnlen(line + 9, MAX_NAME_LEN - 1);
+  strncpy(program->keys, line + 9, len);
+  program->keys[len] = '\0';
+
   program->keys[strcspn(program->keys, "\n")] = '\0';
   foundKey = true;
 }
 
 void parse_exec(char *line, Program *program) {
   if (foundExec) return;
-  strncpy(program->exec, line + 5, MAX_NAME_LEN - 1);
+  size_t len = strnlen(line + 5, MAX_NAME_LEN - 1);
+  strncpy(program->exec, line + 5, len);
   program->exec[strcspn(program->exec, "\n")] = '\0';
+
   char *p = program->exec;
   while ((p = strpbrk(p, "%")) != NULL) {
     *p = '\0';
-    strncat(program->exec, p + 2, strlen(p + 2));
+
+    size_t rspace = MAX_NAME_LEN - strlen(program->exec) - 1;
+    if (rspace > 0) {
+      strncat(program->exec, p + 2, rspace);
+    }
   }
   foundExec = true;
 }
@@ -158,13 +167,22 @@ void scan_desktop_files(const char *directory) {
   struct dirent *entry;
   while ((entry = readdir(dir)) != NULL) {
     if (strcasestr(entry->d_name, ".desktop")) {
-      char filepath[MAX_NAME_LEN * 2];
-      snprintf(filepath, sizeof(filepath), "%s/%s", directory, entry->d_name);
+      size_t filepath_len = strlen(directory) + strlen(entry->d_name) + 2;
+      char *filepath = malloc(filepath_len);
+      if (!filepath) {
+        closedir(dir);
+        return;
+      }
+
+      snprintf(filepath, filepath_len, "%s/%s", directory, entry->d_name);
       if (isdis(filepath)) parse_desktop_file(filepath);
+
       isDesktopEntry = false;
       foundName = false;
       foundKey = false;
       foundExec = false;
+
+      free(filepath);
     }
   }
 
