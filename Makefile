@@ -32,26 +32,32 @@ PREFIX = /usr
 CC = cc
 FILES = main.c
 
-CFLAGS = -Wall -Wextra -O3 -I/usr/include -L/usr/lib
+CFLAGS = -I/usr/include -L/usr/lib
 .if ${OS} == "netbsd"
 CFLAGS += -I/usr/X11R7/include -L/usr/X11R7/lib
 .elif ${OS} == "openbsd"
 CFLAGS += -I/usr/X11R6/include -I/usr/X11R6/include/freetype2 -L/usr/X11R6/lib
 .elif ${OS} == "freebsd"
-CFLAGS += -I/usr/local/include -L/usr/local/lib
+CFLAGS += -I/usr/local/include -I/usr/local/include/X11\
+					-I /usr/local/include/freetype2\
+					-L/usr/local/lib
 .endif
 
 LDFLAGS = -lc -lX11 -lXft
-SLIB = -lxcb -lfontconfig -lz -lexpat -lfreetype -lXrender -lXau -lXdmcp
+SLIB = -lxcb
+.if ${OS} == "openbsd"
+SLIB += -lfontconfig -lz -lexpat -lfreetype -lXrender -lXau -lXdmcp
+.elif ${OS} == "freebsd"
+SLIB += -lthr -lfontconfig -lfreetype -lXrender -lXau -lXdmcp -lexpat -lz -lbz2\
+				-lpng16 -lbrotlidec -lm -lbrotlicommon
+.endif
 
 all:
-	${CC} ${CFLAGS} -o ${NAME} ${FILES} -static ${LDFLAGS} ${SLIB}
+	${CC} -Wall -Wextra -O3 ${CFLAGS} -o ${NAME} ${FILES} -static ${LDFLAGS} ${SLIB}
 	strip ${NAME}
 
 debug:
-	${CC} -Wall -Wextra -g -I/usr/include -L/usr/lib \
-		-I/usr/X11R6/include -I/usr/X11R6/include/freetype2 -L/usr/X11R6/lib \
-		-o ${NAME} ${FILES} ${LDFLAGS}
+	${CC} -Wall -Wextra -g ${CFLAGS} -o ${NAME} ${FILES} ${LDFLAGS}
 
 clean:
 	rm -rf ${NAME}
