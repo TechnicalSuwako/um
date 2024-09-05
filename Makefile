@@ -34,7 +34,7 @@ FILES = main.c
 
 CFLAGS = -I/usr/include -L/usr/lib
 .if ${OS} == "netbsd"
-CFLAGS += -I/usr/X11R7/include -L/usr/X11R7/lib
+CFLAGS += -I/usr/X11R7/include -I/usr/X11R7/include/freetype2 -L/usr/X11R7/lib
 .elif ${OS} == "openbsd"
 CFLAGS += -I/usr/X11R6/include -I/usr/X11R6/include/freetype2 -L/usr/X11R6/lib
 .elif ${OS} == "freebsd"
@@ -50,6 +50,9 @@ SLIB += -lfontconfig -lz -lexpat -lfreetype -lXrender -lXau -lXdmcp
 .elif ${OS} == "freebsd"
 SLIB += -lthr -lfontconfig -lfreetype -lXrender -lXau -lXdmcp -lexpat -lz -lbz2\
 				-lpng16 -lbrotlidec -lm -lbrotlicommon
+.elif ${OS} == "netbsd"
+SLIB += -lfontconfig -lfreetype -lXau -lXdmcp -lgcc -lexpat -lz -lbz2 -lXrandr\
+				-lXrender -lXext -lX11
 .endif
 
 all:
