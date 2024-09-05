@@ -32,7 +32,7 @@ PREFIX = /usr
 CC = cc
 FILES = main.c
 
-CFLAGS = -I/usr/include -L/usr/lib
+CFLAGS = -Wall -Wextra -I/usr/include -L/usr/lib
 .if ${OS} == "netbsd"
 CFLAGS += -I/usr/X11R7/include -I/usr/X11R7/include/freetype2 -L/usr/X11R7/lib
 .elif ${OS} == "openbsd"
@@ -62,11 +62,11 @@ SLIB += -lfontconfig -lfreetype -lXrender -lXau -lXdmcp -lX11\
 .endif
 
 all:
-	${CC} -Wall -Wextra -O3 ${CFLAGS} -o ${NAME} ${FILES} -static ${LDFLAGS} ${SLIB}
+	${CC} -O3 ${CFLAGS} -o ${NAME} ${FILES} -static ${LDFLAGS} ${SLIB}
 	strip ${NAME}
 
 debug:
-	${CC} -Wall -Wextra -g ${CFLAGS} -o ${NAME} ${FILES} ${LDFLAGS}
+	${CC} -g ${CFLAGS} -o ${NAME} ${FILES} ${LDFLAGS}
 
 clean:
 	rm -rf ${NAME}
@@ -80,8 +80,8 @@ dist:
 
 release:
 	mkdir -p release/bin/${VERSION}/${OS}/${ARCH}
-	${CC} ${CFLAGS} -o release/bin/${VERSION}/${OS}/${ARCH}/${NAME} ${FILES}\
-		-static ${LDFLAGS}
+	${CC} -O3 ${CFLAGS} -o release/bin/${VERSION}/${OS}/${ARCH}/${NAME} ${FILES}\
+		-static ${LDFLAGS} ${SLIB}
 	strip release/bin/${VERSION}/${OS}/${ARCH}/${NAME}
 
 install:
