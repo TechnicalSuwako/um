@@ -7,6 +7,9 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <stdbool.h>
+#if defined(__linux__)
+#include <ctype.h>
+#endif
 
 #define MAX_ITEMS 512
 #define MAX_NAME_LEN 256
@@ -51,6 +54,23 @@ XftColor color, selcolor;
 Colormap colormap;
 XftDraw *draw;
 XftFont *font;
+
+#if defined(__linux__)
+char *strcasestr(const char *haystack, const char *needle) {
+  size_t needle_len = strlen(needle);
+  if (needle_len == 0) {
+    return (char *)haystack;
+  }
+
+  while (*haystack) {
+    if (strncasecmp(haystack, needle, needle_len) == 0) {
+      return (char *)haystack;
+    }
+    haystack++;
+  }
+  return NULL;
+}
+#endif
 
 int isdup(const char *name) {
   for (int i = 0; i < dupcnt; i++) {

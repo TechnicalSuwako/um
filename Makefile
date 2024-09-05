@@ -41,6 +41,8 @@ CFLAGS += -I/usr/X11R6/include -I/usr/X11R6/include/freetype2 -L/usr/X11R6/lib
 CFLAGS += -I/usr/local/include -I/usr/local/include/X11\
 					-I /usr/local/include/freetype2\
 					-L/usr/local/lib
+.elif ${OS} == "linux"
+CFLAGS += -I/usr/include/freetype2
 .endif
 
 LDFLAGS = -lc -lX11 -lXft
@@ -53,6 +55,10 @@ SLIB += -lthr -lfontconfig -lfreetype -lXrender -lXau -lXdmcp -lexpat -lz -lbz2\
 .elif ${OS} == "netbsd"
 SLIB += -lfontconfig -lfreetype -lXau -lXdmcp -lgcc -lexpat -lz -lbz2 -lXrandr\
 				-lXrender -lXext -lX11
+.elif ${OS} == "linux"
+SLIB += -lfontconfig -lfreetype -lXrender -lXau -lXdmcp -lX11\
+				-lexpat -lpng16 -lbz2 -lz\
+				-lbrotlidec -lbrotlicommon
 .endif
 
 all:
