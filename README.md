@@ -4,7 +4,7 @@
 Xorg以外、従属ライブラリを使いません。
 
 ## インストールする方法 | Installation
-### OpenBSD
+### BSD
 ```sh
 make
 doas make install
