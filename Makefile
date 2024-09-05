@@ -15,7 +15,7 @@ OS = dragonfly
 OS = linux
 .endif
 
-.if ${UNAME_M} == "X86_64
+.if ${UNAME_M} == "X86_64"
 ARCH = amd64
 .endif
 
